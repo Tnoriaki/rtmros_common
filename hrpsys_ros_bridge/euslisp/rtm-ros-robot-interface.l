@@ -1180,19 +1180,24 @@
    (send self :set-foot-steps-no-wait foot-step-list :overwrite-footstep-index overwrite-footstep-index)
    (send self :wait-foot-steps))
   (:set-foot-steps-with-param-no-wait
-   (foot-step-list step-height-list step-time-list toe-angle-list heel-angle-list &key (overwrite-footstep-index 0))
+   (foot-step-list step-height-list step-time-list toe-angle-list heel-angle-list
+                   &optional (dist-refzmp-offset-list nil)
+                   &key (overwrite-footstep-index 0))
    "Set foot step with step parameter and do not wait for step finish.
     foot-step-list is list of footstep (only biped) or list of list of footstep.
     step-height-list is list of step height (only biped) or list of list of step height.
     step-time-list is list of step time (only biped) or list of list of step time.
     toe-angle-list is list of toe angle (only biped) or list of list of toe angle.
     heel-angle-list is list of heel angle (only biped) or list of list of heel angle."
+   (unless dist-refzmp-offset-list (setq dist-refzmp-offset-list (mapcar #'(lambda (fs) (list (float-vector 0 0 0))) foot-step-list)))
    (unless (listp (car foot-step-list))
      (setq foot-step-list (mapcar #'(lambda (fs) (list fs)) foot-step-list)
            step-height-list (mapcar #'(lambda (sh) (list sh)) step-height-list)
            step-time-list (mapcar #'(lambda (st) (list st)) step-time-list)
            toe-angle-list (mapcar #'(lambda (ta) (list ta)) toe-angle-list)
-           heel-angle-list (mapcar #'(lambda (ha) (list ha)) heel-angle-list)))
+           heel-angle-list (mapcar #'(lambda (ha) (list ha)) heel-angle-list)
+           dist-refzmp-offset-list (mapcar #'(lambda (dro) (list dro)) dist-refzmp-offset-list)
+           ))
    (send self :autobalancerservice_setfootstepswithparam
          :fss
          (mapcar #'(lambda (fs)
@@ -1203,20 +1208,23 @@
                                        fs)))
                  foot-step-list)
          :spss
-         (mapcar #'(lambda (shs sts tas has)
+         (mapcar #'(lambda (shs sts tas has dros)
                      (instance hrpsys_ros_bridge::openhrp_autobalancerservice_stepparams :init
                                :sps
-                               (mapcar #'(lambda (sh st ta ha)
-                                           (instance hrpsys_ros_bridge::openhrp_autobalancerservice_stepparam :init :step_height (* sh 1e-3) :step_time st :toe_angle ta :heel_angle ha))
-                                       shs sts tas has)))
-                 step-height-list step-time-list toe-angle-list heel-angle-list)
+                               (mapcar #'(lambda (sh st ta ha dro)
+                                           (instance hrpsys_ros_bridge::openhrp_autobalancerservice_stepparam :init :step_height (* sh 1e-3) :step_time st :toe_angle ta :heel_angle ha :dist_refzmp_offset dro))
+                                       shs sts tas has dros)))
+                 step-height-list step-time-list toe-angle-list heel-angle-list dist-refzmp-offset-list)
          :overwrite_fs_idx overwrite-footstep-index
          ))
   (:set-foot-steps-with-param
-   (foot-step-list step-height-list step-time-list toe-angle-list heel-angle-list &key (overwrite-footstep-index 0))
+   (foot-step-list step-height-list step-time-list toe-angle-list heel-angle-list
+                   &optional (dist-refzmp-offset-list nil)
+                   &key (overwrite-footstep-index 0))
    "Set foot step with step parameter and wait for step finish.
     For arguments, please see :set-foot-steps-with-param-no-wait documentation."
-   (send self :set-foot-steps-with-param-no-wait foot-step-list step-height-list step-time-list toe-angle-list heel-angle-list :overwrite-footstep-index overwrite-footstep-index)
+   (unless dist-refzmp-offset-list (setq dist-refzmp-offset-list (mapcar #'(lambda (fs) (float-vector 0 0 0)) foot-step-list)))
+   (send self :set-foot-steps-with-param-no-wait foot-step-list step-height-list step-time-list toe-angle-list heel-angle-list dist-refzmp-offset-list :overwrite-footstep-index overwrite-footstep-index)
    (send self :wait-foot-steps))
   (:set-foot-steps-roll-pitch
    (angle &key (axis :x))
